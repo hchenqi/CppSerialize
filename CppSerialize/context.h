@@ -38,8 +38,8 @@ public:
 		align_offset<T>(size);
 		size += sizeof(T);
 	}
-	template<class T>requires has_trivial_layout<T>
-	void add(T[], size_t count) {
+	template<class T> requires has_trivial_layout<T>
+	void add(const T[], size_t count) {
 		align_offset<T>(size);
 		size += sizeof(T) * count;
 	}

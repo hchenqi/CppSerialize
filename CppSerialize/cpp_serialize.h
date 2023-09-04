@@ -7,7 +7,7 @@ namespace CppSerialize {
 
 
 template<class T>
-inline std::vector<byte> Save(const T& object) {
+inline std::vector<byte> Serialize(const T& object) {
 	SizeContext size_context;
 	Size(size_context, object);
 	std::vector<byte> data(size_context.GetSize());
@@ -17,15 +17,15 @@ inline std::vector<byte> Save(const T& object) {
 }
 
 template<class T>
-inline void Load(const std::vector<byte>& data, T& object) {
+inline void Deserialize(const std::vector<byte>& data, T& object) {
 	LoadContext load_context(data.data(), data.size());
 	Load(load_context, object);
 }
 
 template<class T>
-inline T Load(const std::vector<byte>& data) {
+inline T Deserialize(const std::vector<byte>& data) {
 	T object;
-	Load(data, object);
+	Deserialize(data, object);
 	return object;
 }
 
