@@ -1,6 +1,6 @@
 #pragma once
 
-#include "layout.h"
+#include "layout_traits.h"
 
 #include <stdexcept>
 
@@ -43,6 +43,10 @@ public:
 		align_offset<T>(size);
 		size += sizeof(T) * count;
 	}
+	template<class T>
+	void add(const T& obj) {
+		Read([&](auto&& ...args) { add(std::forward<decltype(args)>(args)...); }, obj);
+	}
 public:
 	size_t GetSize() const { return size; }
 };
@@ -58,14 +62,18 @@ private:
 	void CheckOffset(const byte* offset) { if (offset > end) { throw std::runtime_error("save error"); } }
 public:
 	template<class T> requires has_trivial_layout<T>
-	void write(const T& object) {
+	void save(const T& object) {
 		align_offset<T>(curr); byte* next = curr + sizeof(T); CheckOffset(next);
 		memcpy(curr, &object, sizeof(T)); curr = next;
 	}
 	template<class T> requires has_trivial_layout<T>
-	void write(const T object[], size_t count) {
+	void save(const T object[], size_t count) {
 		align_offset<T>(curr); byte* next = curr + sizeof(T) * count; CheckOffset(next);
 		memcpy(curr, object, sizeof(T) * count); curr = next;
+	}
+	template<class T>
+	void save(const T& obj) {
+		Read([&](auto&& ...args) { save(std::forward<decltype(args)>(args)...); }, obj);
 	}
 };
 
@@ -80,14 +88,18 @@ private:
 	void CheckOffset(const byte* offset) { if (offset > end) { throw std::runtime_error("load error"); } }
 public:
 	template<class T> requires has_trivial_layout<T>
-	void read(T& object) {
+	void load(T& object) {
 		align_offset<T>(curr); const byte* next = curr + sizeof(T); CheckOffset(next);
 		memcpy(&object, curr, sizeof(T)); curr = next;
 	}
 	template<class T> requires has_trivial_layout<T>
-	void read(T object[], size_t count) {
+	void load(T object[], size_t count) {
 		align_offset<T>(curr); const byte* next = curr + sizeof(T) * count; CheckOffset(next);
 		memcpy(object, curr, sizeof(T) * count); curr = next;
+	}
+	template<class T>
+	void load(T& obj) {
+		Write([&](auto&& ...args) { load(std::forward<decltype(args)>(args)...); }, obj);
 	}
 };
 

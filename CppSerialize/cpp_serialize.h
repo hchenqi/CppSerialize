@@ -1,4 +1,4 @@
-#include "layout_traits.h"
+#include "context.h"
 
 #include <vector>
 
@@ -9,17 +9,17 @@ namespace CppSerialize {
 template<class T>
 inline std::vector<byte> Serialize(const T& object) {
 	SizeContext size_context;
-	Size(size_context, object);
+	size_context.add(object);
 	std::vector<byte> data(size_context.GetSize());
 	SaveContext save_context(data.data(), data.size());
-	Save(save_context, object);
+	save_context.save(object);
 	return data;
 }
 
 template<class T>
 inline void Deserialize(const std::vector<byte>& data, T& object) {
 	LoadContext load_context(data.data(), data.size());
-	Load(load_context, object);
+	load_context.load(object);
 }
 
 template<class T>

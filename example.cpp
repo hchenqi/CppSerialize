@@ -12,43 +12,54 @@ struct Trivial {
 
 
 struct Custom {
-	Trivial t;
+	int i;
+	double d = 0.0;
 	std::string s;
 	std::vector<Custom> v;
 };
 
 auto layout(layout_type<Custom>) {
 	return declare(
-		&Custom::t,
 		&Custom::s,
+		&Custom::i,
 		&Custom::v
 	);
 }
 
 
-class Private {
+class Object {
 public:
-	Private() {}
-	Private(Custom c) : c(c) {}
+	Object() {}
+	Object(int i) : i(i) {}
 private:
-	friend auto layout(layout_type<Private>);
-	Custom c;
+	int i;
 public:
-	mutable int t = 0;  // not saved
+	mutable double temporary = 0.0;
+private:
+	friend auto layout(layout_type<Object>);
 };
 
-auto layout(layout_type<Private>) { return declare(&Private::c); }
+auto layout(layout_type<Object>) { return declare(&Object::i); }
 
 
 int main() {
 	std::vector<byte> data;
 
-	data = Save(Trivial{ 1, 1.5 });
-	Trivial t = Load<Trivial>(data);
+	data = Serialize(std::make_pair(1, 1.5));
+	auto pair = Deserialize<std::pair<int, double>>(data);
 
-	data = Save(Custom{ t, "hello", { Custom{ Trivial{2, 0.5}, "world"}} });
-	Custom c = Load<Custom>(data);
+	data = Serialize(std::vector<int>{1, 2, 3});
+	auto vector = Deserialize<std::vector<int>>(data);
 
-	data = Save(Private(c));
-	Private p = Load<Private>(data);
+	data = Serialize(std::variant<int, double>(1));
+	auto variant = Deserialize<std::variant<int, double>>(data);
+
+	data = Serialize(Trivial{ 1, 1.5 });
+	auto trivial = Deserialize<Trivial>(data);
+
+	data = Serialize(Custom{ 1, 1.5, "hello", { Custom{ 2, 2.5, "world"}} });
+	auto custom = Deserialize<Custom>(data);
+
+	data = Serialize(Object(1));
+	auto object = Deserialize<Object>(data);
 }
