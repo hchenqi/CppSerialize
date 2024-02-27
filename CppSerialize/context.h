@@ -28,7 +28,7 @@ constexpr void align_offset(byte*& data) {
 
 
 struct SizeContext {
-private:
+protected:
 	size_t size;
 public:
 	SizeContext() : size(0) {}
@@ -53,12 +53,12 @@ public:
 
 
 struct SaveContext {
-private:
+protected:
 	byte* curr;
 	byte* end;
 public:
 	SaveContext(byte* begin, size_t length) : curr(begin), end(begin + length) {}
-private:
+protected:
 	void CheckOffset(const byte* offset) { if (offset > end) { throw std::runtime_error("save error"); } }
 public:
 	template<class T> requires has_trivial_layout<T>
@@ -79,12 +79,12 @@ public:
 
 
 struct LoadContext {
-private:
+protected:
 	const byte* curr;
 	const byte* end;
 public:
 	LoadContext(const byte* begin, size_t length) : curr(begin), end(begin + length) {}
-private:
+protected:
 	void CheckOffset(const byte* offset) { if (offset > end) { throw std::runtime_error("load error"); } }
 public:
 	template<class T> requires has_trivial_layout<T>
