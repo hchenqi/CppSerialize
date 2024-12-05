@@ -54,6 +54,9 @@ int main() {
 	data = Serialize(std::variant<int, double>(1));
 	auto variant = Deserialize<std::variant<int, double>>(data);
 
+	data = Serialize(std::optional<std::string>("abc"));
+	auto optional = Deserialize<std::optional<std::string>>(data);
+
 	data = Serialize(Trivial{ 1, 1.5 });
 	auto trivial = Deserialize<Trivial>(data);
 

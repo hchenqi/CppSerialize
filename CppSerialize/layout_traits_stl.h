@@ -6,6 +6,7 @@
 #include <vector>
 #include <array>
 #include <variant>
+#include <optional>
 
 
 namespace CppSerialize {
@@ -97,6 +98,19 @@ public:
 	template<class Func>
 	static void Write(Func func, std::variant<Ts...>& object) {
 		size_t index; func(index); object = load_variant<0>(index, func);
+	}
+};
+
+
+template<class T>
+struct layout_traits<std::optional<T>> {
+	template<class Func>
+	static void Read(Func func, const std::optional<T>& object) {
+		func(object.has_value()); if (object.has_value()) { func(object.value()); }
+	}
+	template<class Func>
+	static void Write(Func func, std::optional<T>& object) {
+		bool has_value; func(has_value); if (has_value) { object = T(); func(object.value()); }
 	}
 };
 
