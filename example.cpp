@@ -36,10 +36,8 @@ private:
 public:
 	mutable double temporary = 0.0;
 private:
-	friend auto layout(layout_type<Object>);
+	friend auto layout(layout_type<Object>) { return declare(&Object::i); }
 };
-
-auto layout(layout_type<Object>) { return declare(&Object::i); }
 
 
 int main() {
