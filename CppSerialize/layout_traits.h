@@ -12,51 +12,35 @@ struct layout_traits {
 };
 
 
-template<class Func, class T>
-inline void Read(Func func, const T& object) {
-	layout_traits<T>::Read(func, object);
-}
-template<class Func, class T>
-inline void Write(Func func, T& object) {
-	layout_traits<T>::Write(func, object);
-}
-
-
 template<class T> requires has_custom_layout<T>
 struct layout_traits<T> {
-	template<class Func>
-	static void Read(Func func, const T& object) {
-		std::apply([&](auto... member) { (func(object.*member), ...); }, layout(layout_type<T>()));
+	static void read(auto f, const auto& object) {
+		std::apply([&](auto... member) { (f(object.*member), ...); }, layout(layout_type<T>()));
 	}
-	template<class Func>
-	static void Write(Func func, T& object) {
-		std::apply([&](auto... member) { (func(object.*member), ...); }, layout(layout_type<T>()));
+	static void write(auto f, auto& object) {
+		std::apply([&](auto... member) { (f(object.*member), ...); }, layout(layout_type<T>()));
 	}
 };
 
 
 template<class T1, class T2>
 struct layout_traits<std::pair<T1, T2>> {
-	template<class Func>
-	static void Read(Func func, const std::pair<T1, T2>& object) {
-		func(object.first); func(object.second);
+	static void read(auto f, const auto& object) {
+		f(object.first); f(object.second);
 	}
-	template<class Func>
-	static void Write(Func func, std::pair<T1, T2>& object) {
-		func(object.first); func(object.second);
+	static void write(auto f, auto& object) {
+		f(object.first); f(object.second);
 	}
 };
 
 
 template<class... Ts>
 struct layout_traits<std::tuple<Ts...>> {
-	template<class Func>
-	static void Read(Func func, const std::tuple<Ts...>& object) {
-		std::apply([&](auto&... member) { (func(member), ...); }, object);
+	static void read(auto f, const auto& object) {
+		std::apply([&](auto&... member) { (f(member), ...); }, object);
 	}
-	template<class Func>
-	static void Write(Func func, std::tuple<Ts...>& object) {
-		std::apply([&](auto&... member) { (func(member), ...); }, object);
+	static void write(auto f, auto& object) {
+		std::apply([&](auto&... member) { (f(member), ...); }, object);
 	}
 };
 

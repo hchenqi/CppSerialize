@@ -14,63 +14,53 @@ namespace CppSerialize {
 
 template<class T> requires has_trivial_layout<T>
 struct layout_traits<std::basic_string<T>> {
-	template<class Func>
-	static void Read(Func func, const std::basic_string<T>& object) {
-		func(object.size()); func(object.data(), object.size());
+	static void read(auto f, const auto& object) {
+		f(object.size()); f(object.data(), object.size());
 	}
-	template<class Func>
-	static void Write(Func func, std::basic_string<T>& object) {
-		size_t count; func(count); object.resize(count); func(object.data(), count);
+	static void write(auto f, auto& object) {
+		size_t count; f(count); object.resize(count); f(object.data(), count);
 	}
 };
 
 
 template<class T> requires has_trivial_layout<T>
 struct layout_traits<std::vector<T>> {
-	template<class Func>
-	static void Read(Func func, const std::vector<T>& object) {
-		func(object.size()); func(object.data(), object.size());
+	static void read(auto f, const auto& object) {
+		f(object.size()); f(object.data(), object.size());
 	}
-	template<class Func>
-	static void Write(Func func, std::vector<T>& object) {
-		size_t count; func(count); object.resize(count); func(object.data(), count);
+	static void write(auto f, auto& object) {
+		size_t count; f(count); object.resize(count); f(object.data(), count);
 	}
 };
 
 template<class T>
 struct layout_traits<std::vector<T>> {
-	template<class Func>
-	static void Read(Func func, const std::vector<T>& object) {
-		func(object.size()); for (auto& item : object) { func(item); }
+	static void read(auto f, const auto& object) {
+		f(object.size()); for (auto& item : object) { f(item); }
 	}
-	template<class Func>
-	static void Write(Func func, std::vector<T>& object) {
-		size_t count; func(count); object.resize(count); for (auto& item : object) { func(item); }
+	static void write(auto f, auto& object) {
+		size_t count; f(count); object.resize(count); for (auto& item : object) { f(item); }
 	}
 };
 
 
 template<class T, size_t count> requires has_trivial_layout<T>
 struct layout_traits<std::array<T, count>> {
-	template<class Func>
-	static void Read(Func func, const std::array<T, count>& object) {
-		func(object.data(), count);
+	static void read(auto f, const auto& object) {
+		f(object.data(), count);
 	}
-	template<class Func>
-	static void Write(Func func, std::array<T, count>& object) {
-		func(object.data(), count);
+	static void write(auto f, auto& object) {
+		f(object.data(), count);
 	}
 };
 
 template<class T, size_t count>
 struct layout_traits<std::array<T, count>> {
-	template<class Func>
-	static void Read(Func func, const std::array<T, count>& object) {
-		for (auto& item : object) { func(item); }
+	static void read(auto f, const auto& object) {
+		for (auto& item : object) { f(item); }
 	}
-	template<class Func>
-	static void Write(Func func, std::array<T, count>& object) {
-		for (auto& item : object) { func(item); }
+	static void write(auto f, auto& object) {
+		for (auto& item : object) { f(item); }
 	}
 };
 
@@ -78,39 +68,35 @@ struct layout_traits<std::array<T, count>> {
 template<class... Ts>
 struct layout_traits<std::variant<Ts...>> {
 private:
-	template<size_t I, class Func>
-	static std::variant<Ts...> load_variant(size_t index, Func func) {
+	template<size_t I>
+	static std::variant<Ts...> load_variant(size_t index, auto f) {
 		if constexpr (I < sizeof...(Ts)) {
 			if (index == I) {
 				std::variant_alternative_t<I, std::variant<Ts...>> item;
-				func(item);
+				f(item);
 				return item;
 			}
-			return load_variant<I + 1>(index, func);
+			return load_variant<I + 1>(index, f);
 		}
 		throw std::runtime_error("invalid variant index");
 	}
 public:
-	template<class Func>
-	static void Read(Func func, const std::variant<Ts...>& object) {
-		func(object.index()); std::visit([&](auto& item) { func(item); }, object);
+	static void read(auto f, const auto& object) {
+		f(object.index()); std::visit([&](auto& item) { f(item); }, object);
 	}
-	template<class Func>
-	static void Write(Func func, std::variant<Ts...>& object) {
-		size_t index; func(index); object = load_variant<0>(index, func);
+	static void write(auto f, auto& object) {
+		size_t index; f(index); object = load_variant<0>(index, f);
 	}
 };
 
 
 template<class T>
 struct layout_traits<std::optional<T>> {
-	template<class Func>
-	static void Read(Func func, const std::optional<T>& object) {
-		func(object.has_value()); if (object.has_value()) { func(object.value()); }
+	static void read(auto f, const auto& object) {
+		f(object.has_value()); if (object.has_value()) { f(object.value()); }
 	}
-	template<class Func>
-	static void Write(Func func, std::optional<T>& object) {
-		bool has_value; func(has_value); if (has_value) { object = T(); func(object.value()); }
+	static void write(auto f, auto& object) {
+		bool has_value; f(has_value); if (has_value) { object = T(); f(object.value()); }
 	}
 };
 

@@ -45,7 +45,7 @@ public:
 	}
 	template<class T>
 	void add(const T& obj) {
-		Read([&](auto&& ...args) { add(std::forward<decltype(args)>(args)...); }, obj);
+		layout_traits<T>::read([&](auto&& ...args) { add(std::forward<decltype(args)>(args)...); }, obj);
 	}
 public:
 	size_t GetSize() const { return size; }
@@ -73,7 +73,7 @@ public:
 	}
 	template<class T>
 	void save(const T& obj) {
-		Read([&](auto&& ...args) { save(std::forward<decltype(args)>(args)...); }, obj);
+		layout_traits<T>::read([&](auto&& ...args) { save(std::forward<decltype(args)>(args)...); }, obj);
 	}
 };
 
@@ -99,7 +99,7 @@ public:
 	}
 	template<class T>
 	void load(T& obj) {
-		Write([&](auto&& ...args) { load(std::forward<decltype(args)>(args)...); }, obj);
+		layout_traits<T>::write([&](auto&& ...args) { load(std::forward<decltype(args)>(args)...); }, obj);
 	}
 };
 
