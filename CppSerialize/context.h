@@ -10,23 +10,6 @@ namespace CppSerialize {
 using byte = std::byte;
 
 
-template<class T>
-constexpr void align_offset(size_t& offset) {
-	constexpr size_t alignment = sizeof(T) <= 8 ? sizeof(T) : 8;  // 1, 2, 4, 8
-	offset = (offset + (alignment - 1)) & ~(alignment - 1);
-}
-
-template<class T>
-constexpr void align_offset(const byte*& data) {
-	size_t offset = data - (byte*)nullptr; align_offset<T>(offset); data = (byte*)nullptr + offset;
-}
-
-template<class T>
-constexpr void align_offset(byte*& data) {
-	size_t offset = data - (byte*)nullptr; align_offset<T>(offset); data = (byte*)nullptr + offset;
-}
-
-
 struct SizeContext {
 protected:
 	size_t size;
@@ -35,12 +18,10 @@ public:
 public:
 	template<class T> requires has_trivial_layout<T>
 	void add(const T&) {
-		align_offset<T>(size);
 		size += sizeof(T);
 	}
 	template<class T> requires has_trivial_layout<T>
 	void add(const T[], size_t count) {
-		align_offset<T>(size);
 		size += sizeof(T) * count;
 	}
 	template<class T>
@@ -63,12 +44,12 @@ protected:
 public:
 	template<class T> requires has_trivial_layout<T>
 	void save(const T& object) {
-		align_offset<T>(curr); byte* next = curr + sizeof(T); CheckOffset(next);
+		byte* next = curr + sizeof(T); CheckOffset(next);
 		memcpy(curr, &object, sizeof(T)); curr = next;
 	}
 	template<class T> requires has_trivial_layout<T>
 	void save(const T object[], size_t count) {
-		align_offset<T>(curr); byte* next = curr + sizeof(T) * count; CheckOffset(next);
+		byte* next = curr + sizeof(T) * count; CheckOffset(next);
 		memcpy(curr, object, sizeof(T) * count); curr = next;
 	}
 	template<class T>
@@ -89,12 +70,12 @@ protected:
 public:
 	template<class T> requires has_trivial_layout<T>
 	void load(T& object) {
-		align_offset<T>(curr); const byte* next = curr + sizeof(T); CheckOffset(next);
+		const byte* next = curr + sizeof(T); CheckOffset(next);
 		memcpy(&object, curr, sizeof(T)); curr = next;
 	}
 	template<class T> requires has_trivial_layout<T>
 	void load(T object[], size_t count) {
-		align_offset<T>(curr); const byte* next = curr + sizeof(T) * count; CheckOffset(next);
+		const byte* next = curr + sizeof(T) * count; CheckOffset(next);
 		memcpy(object, curr, sizeof(T) * count); curr = next;
 	}
 	template<class T>
