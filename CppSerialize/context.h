@@ -14,22 +14,22 @@ struct SizeContext {
 protected:
 	size_t size;
 public:
-	SizeContext() : size(0) {}
+	constexpr SizeContext() : size(0) {}
 public:
 	template<class T> requires (layout_traits<T>::size() != layout_size_dynamic)
-	void add(const T&) {
+	constexpr void add(const T&) {
 		size += layout_traits<T>::size();
 	}
 	template<class T> requires (layout_traits<T>::size() != layout_size_dynamic)
-	void add(const T[], size_t count) {
+	constexpr void add(const T[], size_t count) {
 		size += layout_traits<T>::size() * count;
 	}
 	template<class T>
-	void add(const T& obj) {
+	constexpr void add(const T& obj) {
 		layout_traits<T>::read([&](auto&& ...args) { add(std::forward<decltype(args)>(args)...); }, obj);
 	}
 public:
-	size_t GetSize() const { return size; }
+	constexpr size_t GetSize() const { return size; }
 };
 
 

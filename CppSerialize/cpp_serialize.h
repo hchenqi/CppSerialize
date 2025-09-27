@@ -8,18 +8,20 @@
 namespace CppSerialize {
 
 
-template<class T>
-inline std::vector<byte> Serialize(const T& object) {
+constexpr size_t Size(const auto& object) {
 	SizeContext size_context;
 	size_context.add(object);
-	std::vector<byte> data(size_context.GetSize());
+	return size_context.GetSize();
+}
+
+inline std::vector<byte> Serialize(const auto& object) {
+	std::vector<byte> data(Size(object));
 	SaveContext save_context(data.data(), data.size());
 	save_context.save(object);
 	return data;
 }
 
-template<class T>
-inline void Deserialize(const std::vector<byte>& data, T& object) {
+inline void Deserialize(const std::vector<byte>& data, auto& object) {
 	LoadContext load_context(data.data(), data.size());
 	load_context.load(object);
 }
