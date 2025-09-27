@@ -1,3 +1,5 @@
+#pragma once
+
 #include <tuple>
 
 
@@ -17,14 +19,17 @@ template<class T, class... Ts>
 constexpr auto member_type_tuple(std::tuple<Ts T::*...>) -> std::tuple<Ts...> { return {}; }
 
 
+template<class T>
+constexpr bool is_layout_empty = std::is_empty_v<T>;
+
 template<class T, class = void>
-constexpr bool has_custom_layout = false;
+constexpr bool is_layout_custom = false;
 
 template<class T>
-constexpr bool has_custom_layout<T, decltype(member_type_tuple<T>(layout(layout_type<T>())), void())> = true;
+constexpr bool is_layout_custom<T, decltype(member_type_tuple<T>(layout(layout_type<T>())), void())> = true;
 
 template<class T>
-constexpr bool has_trivial_layout = std::is_trivial_v<T> && !has_custom_layout<T>;
+constexpr bool is_layout_trivial = std::is_trivial_v<T> && !is_layout_empty<T> && !is_layout_custom<T>;
 
 
 }

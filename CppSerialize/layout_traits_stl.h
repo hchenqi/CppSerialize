@@ -12,8 +12,11 @@
 namespace CppSerialize {
 
 
-template<class T> requires has_trivial_layout<T>
+template<class T> requires is_layout_trivial<T>
 struct layout_traits<std::basic_string<T>> {
+	constexpr static layout_size size() {
+		return layout_size_dynamic;
+	}
 	static void read(auto f, const auto& object) {
 		f(object.size()); f(object.data(), object.size());
 	}
@@ -23,8 +26,11 @@ struct layout_traits<std::basic_string<T>> {
 };
 
 
-template<class T> requires has_trivial_layout<T>
+template<class T> requires is_layout_trivial<T>
 struct layout_traits<std::vector<T>> {
+	constexpr static layout_size size() {
+		return layout_size_dynamic;
+	}
 	static void read(auto f, const auto& object) {
 		f(object.size()); f(object.data(), object.size());
 	}
@@ -35,6 +41,9 @@ struct layout_traits<std::vector<T>> {
 
 template<class T>
 struct layout_traits<std::vector<T>> {
+	constexpr static layout_size size() {
+		return layout_size_dynamic;
+	}
 	static void read(auto f, const auto& object) {
 		f(object.size()); for (auto& item : object) { f(item); }
 	}
@@ -44,8 +53,18 @@ struct layout_traits<std::vector<T>> {
 };
 
 
-template<class T, size_t count> requires has_trivial_layout<T>
+template<class T>
+struct layout_traits<std::array<T, 0>> {
+	constexpr static layout_size size() { return layout_size_empty; }
+	static void read(auto f, const auto& object) {}
+	static void write(auto f, auto& object) {}
+};
+
+template<class T, size_t count> requires is_layout_trivial<T>
 struct layout_traits<std::array<T, count>> {
+	constexpr static layout_size size() {
+		return count * layout_traits<T>::size();
+	}
 	static void read(auto f, const auto& object) {
 		f(object.data(), count);
 	}
@@ -56,6 +75,9 @@ struct layout_traits<std::array<T, count>> {
 
 template<class T, size_t count>
 struct layout_traits<std::array<T, count>> {
+	constexpr static layout_size size() {
+		return count * layout_traits<T>::size();
+	}
 	static void read(auto f, const auto& object) {
 		for (auto& item : object) { f(item); }
 	}
@@ -65,9 +87,25 @@ struct layout_traits<std::array<T, count>> {
 };
 
 
-template<class... Ts>
+template<class T>
+struct layout_traits<std::variant<T>> {
+	constexpr static layout_size size() {
+		return layout_traits<T>::size();
+	}
+	static void read(auto f, const auto& object) {
+		f(std::get<T>(object));
+	}
+	static void write(auto f, auto& object) {
+		f(std::get<T>(object));
+	}
+};
+
+template<class... Ts> requires (sizeof...(Ts) > 1)
 struct layout_traits<std::variant<Ts...>> {
 private:
+	static constexpr bool equal(auto x, auto... xs) {
+		return ((x == xs) && ...);
+	}
 	template<size_t I>
 	static std::variant<Ts...> load_variant(size_t index, auto f) {
 		if constexpr (I < sizeof...(Ts)) {
@@ -81,6 +119,13 @@ private:
 		throw std::runtime_error("invalid variant index");
 	}
 public:
+	constexpr static layout_size size() {
+		if constexpr (equal(layout_traits<Ts>::size()...)) {
+			return layout_size{ sizeof(size_t) } + std::max({ layout_traits<Ts>::size()... });
+		} else {
+			return layout_size_dynamic;
+		}
+	}
 	static void read(auto f, const auto& object) {
 		f(object.index()); std::visit([&](auto& item) { f(item); }, object);
 	}
@@ -92,6 +137,13 @@ public:
 
 template<class T>
 struct layout_traits<std::optional<T>> {
+	constexpr static layout_size size() {
+		if constexpr (layout_traits<T>::size() == layout_size_empty) {
+			return { sizeof(bool) };
+		} else {
+			return layout_size_dynamic;
+		}
+	}
 	static void read(auto f, const auto& object) {
 		f(object.has_value()); if (object.has_value()) { f(object.value()); }
 	}

@@ -16,13 +16,13 @@ protected:
 public:
 	SizeContext() : size(0) {}
 public:
-	template<class T> requires has_trivial_layout<T>
+	template<class T> requires (layout_traits<T>::size() != layout_size_dynamic)
 	void add(const T&) {
-		size += sizeof(T);
+		size += layout_traits<T>::size();
 	}
-	template<class T> requires has_trivial_layout<T>
+	template<class T> requires (layout_traits<T>::size() != layout_size_dynamic)
 	void add(const T[], size_t count) {
-		size += sizeof(T) * count;
+		size += layout_traits<T>::size() * count;
 	}
 	template<class T>
 	void add(const T& obj) {
@@ -42,12 +42,12 @@ public:
 protected:
 	void CheckOffset(const byte* offset) { if (offset > end) { throw std::runtime_error("save error"); } }
 public:
-	template<class T> requires has_trivial_layout<T>
+	template<class T> requires is_layout_trivial<T>
 	void save(const T& object) {
 		byte* next = curr + sizeof(T); CheckOffset(next);
 		memcpy(curr, &object, sizeof(T)); curr = next;
 	}
-	template<class T> requires has_trivial_layout<T>
+	template<class T> requires is_layout_trivial<T>
 	void save(const T object[], size_t count) {
 		byte* next = curr + sizeof(T) * count; CheckOffset(next);
 		memcpy(curr, object, sizeof(T) * count); curr = next;
@@ -68,12 +68,12 @@ public:
 protected:
 	void CheckOffset(const byte* offset) { if (offset > end) { throw std::runtime_error("load error"); } }
 public:
-	template<class T> requires has_trivial_layout<T>
+	template<class T> requires is_layout_trivial<T>
 	void load(T& object) {
 		const byte* next = curr + sizeof(T); CheckOffset(next);
 		memcpy(&object, curr, sizeof(T)); curr = next;
 	}
-	template<class T> requires has_trivial_layout<T>
+	template<class T> requires is_layout_trivial<T>
 	void load(T object[], size_t count) {
 		const byte* next = curr + sizeof(T) * count; CheckOffset(next);
 		memcpy(object, curr, sizeof(T) * count); curr = next;

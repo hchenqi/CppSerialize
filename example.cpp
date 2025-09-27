@@ -1,15 +1,18 @@
 #include "CppSerialize/cpp_serialize.h"
 #include "CppSerialize/layout_traits_stl.h"
 
+#include <cassert>
+
 
 using namespace CppSerialize;
 
+
+struct Empty {};
 
 struct Trivial {
 	int i;
 	double d;
 };
-
 
 struct Custom {
 	int i;
@@ -17,7 +20,6 @@ struct Custom {
 	std::string s;
 	std::vector<Custom> v;
 };
-
 auto layout(layout_type<Custom>) {
 	return declare(
 		&Custom::s,
@@ -25,7 +27,6 @@ auto layout(layout_type<Custom>) {
 		&Custom::v
 	);
 }
-
 
 class Object {
 public:
@@ -40,27 +41,45 @@ private:
 };
 
 
+template<layout_size size>
+void test(auto object) {
+	std::vector<byte> data = Serialize(object);
+	static_assert(size == layout_traits<decltype(object)>::size());
+	if constexpr (size != layout_size_dynamic) {
+		assert(data.size() == size);
+	}
+	auto copy = Deserialize<decltype(object)>(data);
+	auto copy_data = Serialize(copy);
+	assert(data == copy_data);
+}
+
 int main() {
-	std::vector<byte> data;
+	test<layout_size_empty>(Empty{});
+	test<layout_size(16)>(Trivial{ 1, 1.5 });
+	test<layout_size_dynamic>(Custom{ 1, 1.5, "hello", { Custom{ 2, 2.5, "world"}} });
+	test<layout_size(4)>(Object(1));
 
-	data = Serialize(std::make_pair(1, 1.5));
-	auto pair = Deserialize<std::pair<int, double>>(data);
+	test<layout_size(12)>(std::make_pair(1, 1.5));
+	test<layout_size(4)>(std::make_pair(1, Empty{}));
+	test<layout_size_empty>(std::make_tuple());
+	test<layout_size(4)>(std::make_tuple(1));
+	test<layout_size(12)>(std::make_tuple(1, 1.5, Empty{}));
+	test<layout_size_dynamic>(std::make_tuple(1, 1.5, std::string("abc")));
 
-	data = Serialize(std::vector<int>{1, 2, 3});
-	auto vector = Deserialize<std::vector<int>>(data);
+	test<layout_size_dynamic>(std::string("abc"));
 
-	data = Serialize(std::variant<int, double>(1));
-	auto variant = Deserialize<std::variant<int, double>>(data);
+	test<layout_size_dynamic>(std::vector<int>{1, 2, 3});
+	test<layout_size_dynamic>(std::vector<std::string>{ std::string("1"), "2", "3" });
 
-	data = Serialize(std::optional<std::string>("abc"));
-	auto optional = Deserialize<std::optional<std::string>>(data);
+	test<layout_size_empty>(std::array<std::string, 0>{});
+	test<layout_size(12)>(std::array{ 1, 2, 3 });
+	test<layout_size_dynamic>(std::array{ std::string("1"), std::string("2") });
 
-	data = Serialize(Trivial{ 1, 1.5 });
-	auto trivial = Deserialize<Trivial>(data);
+	test<layout_size(4)>(std::variant<int>(1));
+	test<layout_size_dynamic>(std::variant<int, double>(1));
+	test<layout_size(16)>(std::variant<unsigned long long, double>(1.5));
 
-	data = Serialize(Custom{ 1, 1.5, "hello", { Custom{ 2, 2.5, "world"}} });
-	auto custom = Deserialize<Custom>(data);
-
-	data = Serialize(Object(1));
-	auto object = Deserialize<Object>(data);
+	test<layout_size(1)>(std::optional<Empty>());
+	test<layout_size_dynamic>(std::optional<int>(1));
+	test<layout_size_dynamic>(std::optional<std::string>("abc"));
 }
