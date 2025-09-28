@@ -1,4 +1,4 @@
-#include "CppSerialize/cpp_serialize.h"
+#include "CppSerialize/serializer.h"
 #include "CppSerialize/layout_traits_stl.h"
 
 #include <cassert>
@@ -16,17 +16,24 @@ struct Trivial {
 
 struct Custom {
 	int i;
+	double d;
+};
+constexpr auto layout(layout_type<Custom>) { return declare(&Custom::i, &Custom::d); }
+
+struct Custom2 {
+	int i;
 	double d = 0.0;
 	std::string s;
-	std::vector<Custom> v;
+	std::vector<Custom2> v;
 };
-auto layout(layout_type<Custom>) {
+constexpr auto layout(layout_type<Custom2>) {
 	return declare(
-		&Custom::s,
-		&Custom::i,
-		&Custom::v
+		&Custom2::s,
+		&Custom2::i,
+		&Custom2::v
 	);
 }
+
 
 class Object {
 public:
@@ -37,26 +44,27 @@ private:
 public:
 	mutable double temporary = 0.0;
 private:
-	friend auto layout(layout_type<Object>) { return declare(&Object::i); }
+	friend constexpr auto layout(layout_type<Object>) { return declare(&Object::i); }
 };
 
 
 template<layout_size size>
-void test(auto object) {
-	std::vector<byte> data = Serialize(object);
+constexpr void test(auto object) {
+	auto data = Serialize(object).Get();
 	static_assert(size == layout_traits<decltype(object)>::size());
 	if constexpr (size != layout_size_dynamic) {
+		static_assert(size == Size(object).Get());
 		assert(data.size() == size);
 	}
-	auto copy = Deserialize<decltype(object)>(data);
-	auto copy_data = Serialize(copy);
-	assert(data == copy_data);
+	auto copy = Deserialize<decltype(object)>(data).Get();
+	auto data_copy = Serialize(copy).Get();
+	assert(data == data_copy);
 }
 
 int main() {
 	test<layout_size_empty>(Empty{});
 	test<layout_size(16)>(Trivial{ 1, 1.5 });
-	test<layout_size_dynamic>(Custom{ 1, 1.5, "hello", { Custom{ 2, 2.5, "world"}} });
+	test<layout_size_dynamic>(Custom2{ 1, 1.5, "hello", { Custom2{ 2, 2.5, "world"}} });
 	test<layout_size(4)>(Object(1));
 
 	test<layout_size(12)>(std::make_pair(1, 1.5));

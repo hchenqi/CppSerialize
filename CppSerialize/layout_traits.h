@@ -13,20 +13,27 @@ struct layout_traits {
 };
 
 
-template<class T> requires is_layout_empty<T>
+template<class T>
+concept layout_static = layout_traits<T>::size() != layout_size_dynamic;
+
+
+template<class T> requires layout_empty<T>
 struct layout_traits<T> {
 	constexpr static layout_size size() { return layout_size_empty; }
 	constexpr static void read(auto f, const auto& object) {}
 	constexpr static void write(auto f, auto& object) {}
 };
 
-template<class T> requires is_layout_trivial<T>
+
+template<class T> requires layout_trivial<T>
 struct layout_traits<T> {
 	constexpr static layout_size size() { return { sizeof(T) }; }
+	constexpr static void read(auto f, const auto& object) { f(object); }
+	constexpr static void write(auto f, auto& object) { f(object); }
 };
 
 
-template<class T> requires is_layout_custom<T>
+template<class T> requires layout_custom<T>
 struct layout_traits<T> {
 	constexpr static layout_size size() {
 		return layout_traits<decltype(member_type_tuple<T>(layout(layout_type<T>())))>::size();
@@ -63,15 +70,9 @@ struct layout_traits<std::tuple<>> {
 
 template<class T>
 struct layout_traits<std::tuple<T>> {
-	constexpr static layout_size size() {
-		return layout_traits<T>::size();
-	}
-	constexpr static void read(auto f, const auto& object) {
-		f(std::get<T>(object));
-	}
-	constexpr static void write(auto f, auto& object) {
-		f(std::get<T>(object));
-	}
+	constexpr static layout_size size() { return layout_traits<T>::size(); }
+	constexpr static void read(auto f, const auto& object) { f(std::get<T>(object)); }
+	constexpr static void write(auto f, auto& object) { f(std::get<T>(object)); }
 };
 
 template<class... Ts>

@@ -12,32 +12,19 @@
 namespace CppSerialize {
 
 
-template<class T> requires is_layout_trivial<T>
+template<class T>
 struct layout_traits<std::basic_string<T>> {
 	constexpr static layout_size size() {
 		return layout_size_dynamic;
 	}
 	constexpr static void read(auto f, const auto& object) {
-		f(object.size()); f(object.data(), object.size());
+		f(object.size()); for (auto& item : object) { f(item); }
 	}
 	constexpr static void write(auto f, auto& object) {
-		size_t count; f(count); object.resize(count); f(object.data(), count);
+		size_t count; f(count); object.resize(count); for (auto& item : object) { f(item); }
 	}
 };
 
-
-template<class T> requires is_layout_trivial<T>
-struct layout_traits<std::vector<T>> {
-	constexpr static layout_size size() {
-		return layout_size_dynamic;
-	}
-	constexpr static void read(auto f, const auto& object) {
-		f(object.size()); f(object.data(), object.size());
-	}
-	constexpr static void write(auto f, auto& object) {
-		size_t count; f(count); object.resize(count); f(object.data(), count);
-	}
-};
 
 template<class T>
 struct layout_traits<std::vector<T>> {
@@ -60,17 +47,11 @@ struct layout_traits<std::array<T, 0>> {
 	constexpr static void write(auto f, auto& object) {}
 };
 
-template<class T, size_t count> requires is_layout_trivial<T>
+template<class T, size_t count> requires layout_trivial<T>
 struct layout_traits<std::array<T, count>> {
-	constexpr static layout_size size() {
-		return count * layout_traits<T>::size();
-	}
-	constexpr static void read(auto f, const auto& object) {
-		f(object.data(), count);
-	}
-	constexpr static void write(auto f, auto& object) {
-		f(object.data(), count);
-	}
+	constexpr static layout_size size() { return { sizeof(std::array<T, count>) }; }
+	constexpr static void read(auto f, const auto& object) { f(object); }
+	constexpr static void write(auto f, auto& object) { f(object); }
 };
 
 template<class T, size_t count>
@@ -89,15 +70,9 @@ struct layout_traits<std::array<T, count>> {
 
 template<class T>
 struct layout_traits<std::variant<T>> {
-	constexpr static layout_size size() {
-		return layout_traits<T>::size();
-	}
-	constexpr static void read(auto f, const auto& object) {
-		f(std::get<T>(object));
-	}
-	constexpr static void write(auto f, auto& object) {
-		f(std::get<T>(object));
-	}
+	constexpr static layout_size size() { return layout_traits<T>::size(); }
+	constexpr static void read(auto f, const auto& object) { f(std::get<T>(object)); }
+	constexpr static void write(auto f, auto& object) { f(std::get<T>(object)); }
 };
 
 template<class... Ts> requires (sizeof...(Ts) > 1)
