@@ -1,5 +1,9 @@
 #include "CppSerialize/serializer.h"
-#include "CppSerialize/layout_traits_stl.h"
+#include "CppSerialize/stl/string.h"
+#include "CppSerialize/stl/vector.h"
+#include "CppSerialize/stl/array.h"
+#include "CppSerialize/stl/variant.h"
+#include "CppSerialize/stl/optional.h"
 
 #include <cassert>
 
@@ -34,7 +38,6 @@ constexpr auto layout(layout_type<Custom2>) {
 	);
 }
 
-
 class Object {
 public:
 	Object() {}
@@ -64,12 +67,15 @@ constexpr void test(auto object) {
 int main() {
 	test<layout_size_empty>(Empty{});
 	test<layout_size(16)>(Trivial{ 1, 1.5 });
+	test<layout_size(12)>(Custom{ 1, 1.5 });
 	test<layout_size_dynamic>(Custom2{ 1, 1.5, "hello", { Custom2{ 2, 2.5, "world"}} });
 	test<layout_size(4)>(Object(1));
 
 	test<layout_size(12)>(std::make_pair(1, 1.5));
 	test<layout_size(4)>(std::make_pair(1, Empty{}));
+	test<layout_size_empty>(std::make_pair(Empty{}, Empty{}));
 	test<layout_size_empty>(std::make_tuple());
+	test<layout_size_empty>(std::make_tuple(Empty{}));
 	test<layout_size(4)>(std::make_tuple(1));
 	test<layout_size(12)>(std::make_tuple(1, 1.5, Empty{}));
 	test<layout_size_dynamic>(std::make_tuple(1, 1.5, std::string("abc")));
@@ -84,6 +90,7 @@ int main() {
 	test<layout_size_dynamic>(std::array{ std::string("1"), std::string("2") });
 
 	test<layout_size(4)>(std::variant<int>(1));
+	test<layout_size(8)>(std::variant<double>(1.5));
 	test<layout_size_dynamic>(std::variant<int, double>(1));
 	test<layout_size(16)>(std::variant<unsigned long long, double>(1.5));
 
