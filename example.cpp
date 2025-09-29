@@ -51,7 +51,7 @@ private:
 template<layout_size size>
 constexpr void test(auto object) {
 	auto data = Serialize(object).Get();
-	static_assert(size == layout_traits<decltype(object)>::size());
+	static_assert(size == layout_size(layout_type<decltype(object)>()));
 	if constexpr (size != layout_size_dynamic) {
 		static_assert(size == Size(object).Get());
 		assert(data.size() == size);

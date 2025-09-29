@@ -49,15 +49,13 @@ struct layout_traits<std::array<T, 0>> {
 
 template<class T, size_t count> requires layout_trivial<T>
 struct layout_traits<std::array<T, count>> {
-	constexpr static layout_size size() { return { sizeof(std::array<T, count>) }; }
-	constexpr static void read(auto f, const auto& object) { f(object); }
-	constexpr static void write(auto f, auto& object) { f(object); }
+	struct trivial {};
 };
 
 template<class T, size_t count>
 struct layout_traits<std::array<T, count>> {
 	constexpr static layout_size size() {
-		return count * layout_traits<T>::size();
+		return count * layout_size(layout_type<T>());
 	}
 	constexpr static void read(auto f, const auto& object) {
 		for (auto& item : object) { f(item); }
@@ -70,7 +68,7 @@ struct layout_traits<std::array<T, count>> {
 
 template<class T>
 struct layout_traits<std::variant<T>> {
-	constexpr static layout_size size() { return layout_traits<T>::size(); }
+	constexpr static layout_size size() { return layout_size(layout_type<T>()); }
 	constexpr static void read(auto f, const auto& object) { f(std::get<T>(object)); }
 	constexpr static void write(auto f, auto& object) { f(std::get<T>(object)); }
 };
@@ -95,8 +93,8 @@ private:
 	}
 public:
 	constexpr static layout_size size() {
-		if constexpr (equal(layout_traits<Ts>::size()...)) {
-			return layout_size{ sizeof(size_t) } + std::max({ layout_traits<Ts>::size()... });
+		if constexpr (equal(layout_size(layout_type<Ts>())...)) {
+			return layout_size{ sizeof(size_t) } + std::max({ layout_size(layout_type<Ts>())... });
 		} else {
 			return layout_size_dynamic;
 		}
@@ -113,7 +111,7 @@ public:
 template<class T>
 struct layout_traits<std::optional<T>> {
 	constexpr static layout_size size() {
-		if constexpr (layout_traits<T>::size() == layout_size_empty) {
+		if constexpr (layout_size(layout_type<T>()) == layout_size_empty) {
 			return { sizeof(bool) };
 		} else {
 			return layout_size_dynamic;
