@@ -50,6 +50,26 @@ private:
 	friend constexpr auto layout(layout_type<Object>) { return declare(&Object::i); }
 };
 
+class Derived : public Object {
+public:
+	using layout_base = Object;
+	using Object::Object;
+private:
+	void f() {}
+};
+
+class Derived2 : public Derived {
+public:
+	using layout_base = Derived;
+public:
+	Derived2() = default;
+	Derived2(int i, double j) : Derived(i), j(j) {}
+private:
+	double j = 0;
+private:
+	friend constexpr auto layout(layout_type<Derived2>) { return declare(&Derived2::j); }
+};
+
 
 template<layout_size size>
 constexpr void test(auto object) {
@@ -70,6 +90,8 @@ int main() {
 	test<layout_size(12)>(Custom{ 1, 1.5 });
 	test<layout_size_dynamic>(Custom2{ 1, 1.5, "hello", { Custom2{ 2, 2.5, "world"}} });
 	test<layout_size(4)>(Object(1));
+	test<layout_size(4)>(Derived(1));
+	test<layout_size(12)>(Derived2(1, 1.5));
 
 	test<layout_size(12)>(std::make_pair(1, 1.5));
 	test<layout_size(4)>(std::make_pair(1, Empty{}));

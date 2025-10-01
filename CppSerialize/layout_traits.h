@@ -31,6 +31,10 @@ concept layout_custom = layout_custom_trait<T>::value;
 
 
 template<class T>
+concept layout_derived = requires { typename T::layout_base; } && !layout_trivial<typename T::layout_base>;
+
+
+template<class T>
 constexpr layout_size::layout_size(layout_type<T>) {
 	if constexpr (layout_trivial<T>) {
 		size = sizeof(T);
@@ -61,6 +65,24 @@ struct layout_traits<T> {
 	}
 	constexpr static void write(auto f, auto& object) {
 		std::apply([&](auto... member) { (f(object.*member), ...); }, layout(layout_type<T>()));
+	}
+};
+
+
+template<class T> requires layout_derived<T>
+struct layout_traits<T> : layout_traits<typename T::layout_base> {};
+
+
+template<class T> requires layout_custom<T> && layout_derived<T>
+struct layout_traits<T> : layout_traits<typename T::layout_base> {
+	constexpr static layout_size size() {
+		return layout_traits<typename T::layout_base>::size() + layout_size(layout_type<decltype(member_type_tuple<T>(layout(layout_type<T>())))>());
+	}
+	constexpr static void read(auto f, const auto& object) {
+		layout_traits<typename T::layout_base>::read(f, object), std::apply([&](auto... member) { (f(object.*member), ...); }, layout(layout_type<T>()));
+	}
+	constexpr static void write(auto f, auto& object) {
+		layout_traits<typename T::layout_base>::write(f, object), std::apply([&](auto... member) { (f(object.*member), ...); }, layout(layout_type<T>()));
 	}
 };
 
