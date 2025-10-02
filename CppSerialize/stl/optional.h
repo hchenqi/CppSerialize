@@ -11,7 +11,7 @@ namespace CppSerialize {
 template<class T>
 struct layout_traits<std::optional<T>> {
 	constexpr static layout_size size() {
-		if constexpr (layout_size(layout_type<T>()) == layout_size_empty) {
+		if constexpr (layout_traits<T>::size() == layout_size_empty) {
 			return { sizeof(bool) };
 		} else {
 			return layout_size_dynamic;

@@ -12,17 +12,21 @@ using namespace CppSerialize;
 
 
 struct Empty {};
+static_assert(layout_empty<Empty>);
 
 struct Trivial {
 	int i;
 	double d;
 };
+static_assert(std::is_trivially_copyable_v<Trivial>);
+static_assert(layout_trivial<Trivial>);
 
 struct Custom {
 	int i;
 	double d;
 };
 constexpr auto layout(layout_type<Custom>) { return declare(&Custom::i, &Custom::d); }
+static_assert(layout_custom<Custom>);
 
 struct Custom2 {
 	int i;
@@ -37,6 +41,7 @@ constexpr auto layout(layout_type<Custom2>) {
 		&Custom2::v
 	);
 }
+static_assert(layout_custom<Custom2>);
 
 class Object {
 public:
@@ -49,6 +54,7 @@ public:
 private:
 	friend constexpr auto layout(layout_type<Object>) { return declare(&Object::i); }
 };
+static_assert(layout_custom<Object>);
 
 class Derived : public Object {
 public:
@@ -57,6 +63,7 @@ public:
 private:
 	void f() {}
 };
+static_assert(!layout_custom<Derived> && layout_derived<Derived>);
 
 class Derived2 : public Derived {
 public:
@@ -69,12 +76,24 @@ private:
 private:
 	friend constexpr auto layout(layout_type<Derived2>) { return declare(&Derived2::j); }
 };
+static_assert(layout_custom<Derived2> && layout_derived<Derived2>);
+
+class DerivedTrivial : public Trivial {
+public:
+	using layout_base = Trivial;
+private:
+	std::string s;
+private:
+	friend constexpr auto layout(layout_type<DerivedTrivial>) { return declare(&DerivedTrivial::s); }
+};
+static_assert(!std::is_trivially_copyable_v<DerivedTrivial>);
+static_assert(layout_custom<DerivedTrivial> && layout_derived<DerivedTrivial>);
 
 
 template<layout_size size>
 constexpr void test(auto object) {
 	auto data = Serialize(object).Get();
-	static_assert(size == layout_size(layout_type<decltype(object)>()));
+	static_assert(size == layout_traits<decltype(object)>::size());
 	if constexpr (size != layout_size_dynamic) {
 		static_assert(size == Size(object).Get());
 		assert(data.size() == size);
@@ -92,6 +111,7 @@ int main() {
 	test<layout_size(4)>(Object(1));
 	test<layout_size(4)>(Derived(1));
 	test<layout_size(12)>(Derived2(1, 1.5));
+	test<layout_size_dynamic>(DerivedTrivial());
 
 	test<layout_size(12)>(std::make_pair(1, 1.5));
 	test<layout_size(4)>(std::make_pair(1, Empty{}));

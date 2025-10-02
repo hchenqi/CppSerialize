@@ -25,7 +25,7 @@ public:
 	}
 private:
 	constexpr static void access(size_t& size, const layout_static auto& object) {
-		size += layout_size(layout_type<std::remove_cvref_t<decltype(object)>>());
+		size += layout_traits<std::remove_cvref_t<decltype(object)>>::size();
 	}
 	constexpr static void access(size_t& size, const auto& object) {
 		layout_traits<std::remove_cvref_t<decltype(object)>>::read([&](const auto& item) { access(size, item); }, object);

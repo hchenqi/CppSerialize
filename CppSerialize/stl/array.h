@@ -16,14 +16,12 @@ struct layout_traits<std::array<T, 0>> {
 };
 
 template<class T, size_t count> requires layout_trivial<T>
-struct layout_traits<std::array<T, count>> {
-	struct trivial {};
-};
+struct layout_traits<std::array<T, count>> : layout_traits_trivial<std::array<T, count>> {};
 
 template<class T, size_t count>
 struct layout_traits<std::array<T, count>> {
 	constexpr static layout_size size() {
-		return count * layout_size(layout_type<T>());
+		return count * layout_traits<T>::size();
 	}
 	constexpr static void read(auto f, const auto& object) {
 		for (auto& item : object) { f(item); }

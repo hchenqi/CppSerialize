@@ -11,12 +11,6 @@ namespace CppSerialize {
 
 struct layout_size {
 	size_t size;
-
-	constexpr layout_size(size_t size) : size(size) {}
-
-	template<class T>
-	constexpr layout_size(layout_type<T>);
-
 	constexpr operator size_t() const { return size; }
 };
 

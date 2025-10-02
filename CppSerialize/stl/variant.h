@@ -10,7 +10,7 @@ namespace CppSerialize {
 
 template<class T>
 struct layout_traits<std::variant<T>> {
-	constexpr static layout_size size() { return layout_size(layout_type<T>()); }
+	constexpr static layout_size size() { return layout_traits<T>::size(); }
 	constexpr static void read(auto f, const auto& object) { f(std::get<T>(object)); }
 	constexpr static void write(auto f, auto& object) { f(std::get<T>(object)); }
 };
@@ -35,8 +35,8 @@ private:
 	}
 public:
 	constexpr static layout_size size() {
-		if constexpr (equal(layout_size(layout_type<Ts>())...)) {
-			return layout_size{ sizeof(size_t) } + std::max({ layout_size(layout_type<Ts>())... });
+		if constexpr (equal(layout_traits<Ts>::size()...)) {
+			return layout_size{ sizeof(size_t) } + std::max({ layout_traits<Ts>::size()... });
 		} else {
 			return layout_size_dynamic;
 		}
